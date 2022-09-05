@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kisiler_uygulamasi/cubit/anasayfa_cubit.dart';
 import 'package:kisiler_uygulamasi/entity/kisiler.dart';
 import 'package:kisiler_uygulamasi/views/kisi_detay_sayfa.dart';
 import 'package:kisiler_uygulamasi/views/kisi_kayit_sayfa.dart';
@@ -13,17 +15,11 @@ class Anasayfa extends StatefulWidget {
 class _AnasayfaState extends State<Anasayfa> {
   bool aramaYapiliyorMu = false;
   
-  Future<List<Kisiler>> tumKisilerGoster() async {
-    var kisilerListesi = <Kisiler>[];
-    var k1 = Kisiler(kisi_id: 1, kisi_ad: "Ahmet", kisi_tel: "1111");
-    var k2 = Kisiler(kisi_id: 2, kisi_ad: "Zeynep", kisi_tel: "2222");
-    var k3 = Kisiler(kisi_id: 3, kisi_ad: "Beyza", kisi_tel: "3333");
-    kisilerListesi.add(k1);
-    kisilerListesi.add(k2);
-    kisilerListesi.add(k3);
-    return kisilerListesi;
+  @override
+  void initState() {
+    super.initState();
+    context.read<AnasayfaCubit>().kisileriYukle();
   }
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,7 +27,7 @@ class _AnasayfaState extends State<Anasayfa> {
         title: aramaYapiliyorMu ?
             TextField(decoration: const InputDecoration(hintText: "Ara"),
               onChanged:(aramaSonucu){
-                print("Kişi Ara : $aramaSonucu");
+                context.read<AnasayfaCubit>().ara(aramaSonucu);
               } ,)
             : const Text("Kişiler"),
         actions: [
@@ -40,6 +36,7 @@ class _AnasayfaState extends State<Anasayfa> {
             setState(() {
               aramaYapiliyorMu = false;
             });
+            context.read<AnasayfaCubit>().kisileriYukle();
           }, icon:const Icon(Icons.clear)):
           IconButton(onPressed: (){
             setState(() {
@@ -48,19 +45,17 @@ class _AnasayfaState extends State<Anasayfa> {
           }, icon:const Icon(Icons.search)),
         ],
       ),
-      body: FutureBuilder<List<Kisiler>>(
-        future: tumKisilerGoster(),
-        builder: (context,snapshot){
-          if(snapshot.hasData){
-            var kisilerListesi = snapshot.data;
+      body: BlocBuilder<AnasayfaCubit,List<Kisiler>>(
+        builder: (context,kisilerListesi){
+          if(kisilerListesi.isNotEmpty){
             return ListView.builder(
-              itemCount: kisilerListesi!.length,//3
+              itemCount: kisilerListesi.length,//3
               itemBuilder: (context,indeks){//0,1,2
                 var kisi = kisilerListesi[indeks];
                 return GestureDetector(
                   onTap: (){
                     Navigator.push(context, MaterialPageRoute(builder: (context) => KisiDetaySayfa(kisi: kisi,)))
-                        .then((value) { print("Detay sayfasından Anasayfaya dönüldü"); } );
+                        .then((value) { context.read<AnasayfaCubit>().kisileriYukle(); } );
                   },
                   child: Card(
                     child: Row(
@@ -77,7 +72,7 @@ class _AnasayfaState extends State<Anasayfa> {
                                 action: SnackBarAction(
                                     label: "Evet",
                                     onPressed: (){
-                                      print("Kişi sil : ${kisi.kisi_ad}");
+                                      context.read<AnasayfaCubit>().sil(kisi.kisi_id);
                                     }
                                 ),
                             ),
@@ -99,12 +94,7 @@ class _AnasayfaState extends State<Anasayfa> {
         label: const Text("Kayıt"),
         onPressed: (){
           Navigator.push(context, MaterialPageRoute(builder: (context) => const KisiKayitSayfa()))
-            .then((value) { print("Kayıt sayfasından Anasayfaya dönüldü"); } );
-          //ElevatedButton(onPressed: (){
-          //  var kisi = Kisiler(kisi_id: 1, kisi_ad: "Ahmet", kisi_tel: "1111");
-          //  Navigator.push(context, MaterialPageRoute(builder: (context) => KisiDetaySayfa(kisi: kisi,)))
-          //      .then((value) { print("Detay sayfasından Anasayfaya dönüldü"); } );
-          //}, child: const Text("Detay")),
+            .then((value) { context.read<AnasayfaCubit>().kisileriYukle(); } );
         },
       ),
     );
